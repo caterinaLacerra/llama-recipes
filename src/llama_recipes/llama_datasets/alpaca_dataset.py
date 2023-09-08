@@ -5,10 +5,12 @@
 
 import copy
 import json
-
+import os
 import torch
-from torch.utils.data import Dataset
 
+from sentencepiece import SentencePieceProcessor
+from torch.utils.data import Dataset
+from typing import List
 
 PROMPT_DICT = {
     "prompt_input": (
@@ -40,9 +42,6 @@ class InstructionDataset(Dataset):
         return len(self.ann)
 
     def __getitem__(self, index):
-        IGNORE_INDEX = -100  # The default setting in CrossEntropyLoss
-
-
         ann = self.ann[index]
         if ann.get("input", "") == "":
             prompt = PROMPT_DICT["prompt_no_input"].format_map(ann)
@@ -67,7 +66,7 @@ class InstructionDataset(Dataset):
         example_mask = example.ge(0)
         label_mask = labels.ge(0)
         example[~example_mask] = 0
-        labels[~label_mask] = IGNORE_INDEX
+        labels[~label_mask] = 0
         example_mask = example_mask.float()
         label_mask = label_mask.float()
 

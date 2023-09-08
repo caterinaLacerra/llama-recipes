@@ -2,28 +2,25 @@
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
 
 import os
-from pkg_resources import packaging
 
 import fire
 import torch
 import torch.distributed as dist
 import torch.optim as optim
 from peft import get_peft_model, prepare_model_for_int8_training
+from pkg_resources import packaging
 from torch.distributed.fsdp import (
     FullyShardedDataParallel as FSDP,
 )
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DistributedSampler
 from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    AutoConfig,
+    AutoModelForCausalLM, AutoConfig, AutoTokenizer
 )
 from transformers.models.llama.modeling_llama import LlamaDecoderLayer
-from transformers.models.gpt_neox.modeling_gpt_neox import GPTNeoXLayer
 
 from llama_recipes.configs import fsdp_config, train_config
-from llama_recipes.policies import AnyPrecisionAdamW, apply_fsdp_checkpointing
+from llama_recipes.policies import AnyPrecisionAdamW
 
 from llama_recipes.utils import fsdp_auto_wrap_policy
 from llama_recipes.utils.config_utils import (
@@ -31,6 +28,7 @@ from llama_recipes.utils.config_utils import (
     generate_peft_config,
     generate_dataset_config,
 )
+
 from llama_recipes.utils.dataset_utils import get_preprocessed_dataset
 
 from llama_recipes.utils.train_utils import (
@@ -46,8 +44,12 @@ from llama_recipes.utils.train_utils import (
 
 def main(**kwargs):
     # Update the configuration for the training and sharding process
-    update_config((train_config, fsdp_config), **kwargs)
+    print(fsdp_config.optimizer)
+    exit()
 
+    update_config((train_config, fsdp_config), **kwargs)
+    print(train_config)
+    print(train_config.model_name)
     # Set the seeds for reproducibility
     torch.cuda.manual_seed(train_config.seed)
     torch.manual_seed(train_config.seed)
@@ -59,13 +61,14 @@ def main(**kwargs):
         rank = int(os.environ["RANK"])
         world_size = int(os.environ["WORLD_SIZE"])
 
+
     if torch.distributed.is_initialized():
         torch.cuda.set_device(local_rank)
         clear_gpu_cache(local_rank)
         setup_environ_flags(rank)
 
-    # Load the pre-trained model and setup its configuration
     use_cache = False if train_config.enable_fsdp else None
+    # Load the pre-trained model and setup its configuration
     if train_config.enable_fsdp and train_config.low_cpu_fsdp:
         """
         for FSDP, we can save cpu memory by loading pretrained model on rank0 only.
@@ -83,7 +86,6 @@ def main(**kwargs):
                 train_config.model_name,
                 load_in_8bit=True if train_config.quantization else None,
                 device_map="auto" if train_config.quantization else None,
-                use_cache=use_cache,
             )
         else:
             llama_config = AutoConfig.from_pretrained(train_config.model_name)
@@ -106,7 +108,7 @@ def main(**kwargs):
         """
         try:
             from optimum.bettertransformer import BetterTransformer
-            model = BetterTransformer.transform(model) 
+            model = BetterTransformer.transform(model)
         except ImportError:
             print("Module 'optimum' not found. Please install 'optimum' it before proceeding.")
     print_model_size(model, train_config, rank if train_config.enable_fsdp else 0)
@@ -138,12 +140,11 @@ def main(**kwargs):
             freeze_transformer_layers(train_config.num_freeze_layers)
 
         mixed_precision_policy, wrapping_policy = get_policies(fsdp_config, rank)
-        my_auto_wrapping_policy = fsdp_auto_wrap_policy(model, GPTNeoXLayer)
-        # my_auto_wrapping_policy = fsdp_auto_wrap_policy(model, LlamaDecoderLayer)
+        my_auto_wrapping_policy = fsdp_auto_wrap_policy(model, LlamaDecoderLayer)
 
         model = FSDP(
             model,
-            auto_wrap_policy= my_auto_wrapping_policy if train_config.use_peft else wrapping_policy,
+            auto_wrap_policy=my_auto_wrapping_policy if train_config.use_peft else wrapping_policy,
             mixed_precision=mixed_precision_policy if not fsdp_config.pure_bf16 else None,
             sharding_strategy=fsdp_config.sharding_strategy,
             device_id=torch.cuda.current_device(),
@@ -202,6 +203,7 @@ def main(**kwargs):
         sampler=train_sampler if train_sampler else None,
         drop_last=True,
         collate_fn=dataset_train.collate_fn,
+        # collate_fn=default_data_collator,
     )
 
     eval_dataloader = None
@@ -214,6 +216,7 @@ def main(**kwargs):
             sampler=val_sampler if val_sampler else None,
             drop_last=True,
             collate_fn=dataset_val.collate_fn,
+            # collate_fn=default_data_collator
         )
 
     # Initialize the optimizer and learning rate scheduler
@@ -241,7 +244,7 @@ def main(**kwargs):
         tokenizer,
         optimizer,
         scheduler,
-        train_config.gradient_accumulation_steps,
+        gradient_accumulation_steps,
         train_config,
         fsdp_config if train_config.enable_fsdp else None,
         local_rank if train_config.enable_fsdp else None,

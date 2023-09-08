@@ -5,10 +5,11 @@ from functools import partial
 
 import torch
 
-from llama_recipes.datasets import (
+from llama_recipes.llama_datasets import (
     get_grammar_dataset,
     get_alpaca_dataset,
     get_samsum_dataset,
+    get_sharegpt_dataset
 )
 
 
@@ -16,6 +17,7 @@ DATASET_PREPROC = {
     "alpaca_dataset": partial(get_alpaca_dataset, max_words=224),
     "grammar_dataset": get_grammar_dataset,
     "samsum_dataset": get_samsum_dataset,
+    "sharegpt_dataset": get_sharegpt_dataset
 }
 
 

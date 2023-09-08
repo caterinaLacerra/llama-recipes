@@ -26,3 +26,11 @@ class alpaca_dataset:
     train_split: str = "train"
     test_split: str = "val"
     data_path: str = "src/llama_recipes/datasets/alpaca_data.json"
+
+@dataclass
+class sharegpt_dataset:
+    dataset: str = "sharegpt_dataset"
+    data_path: str = "/home/caterina/sharegpt-data"
+    train_split: str = "train"
+    test_split: str = "validation"
+    input_length: int = 4096
