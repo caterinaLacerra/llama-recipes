@@ -30,7 +30,19 @@ def set_tokenizer_params(tokenizer: LlamaTokenizer):
 def byte2mb(x):
     return int(x / 2**20)
 
-def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_scheduler, gradient_accumulation_steps, train_config, fsdp_config=None, local_rank=None, rank=None):
+def train(
+        model,
+        train_dataloader,
+        eval_dataloader,
+        tokenizer,
+        optimizer,
+        lr_scheduler,
+        gradient_accumulation_steps,
+        train_config,
+        fsdp_config=None,
+        local_rank=None,
+        rank=None,
+):
     """
     Trains the model on the given dataloader
     
@@ -62,6 +74,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     epoch_times = []
     checkpoint_times = []
     results = {}
+    current_patience = train_config.patience
     best_val_loss = float("inf")
     for epoch in range(train_config.num_epochs):
         epoch_start_time = time.perf_counter()
@@ -179,13 +192,27 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         print(f"best eval loss on epoch {epoch} is {best_val_loss}")
                 else:
                     print(f"best eval loss on epoch {epoch} is {best_val_loss}")
+
+            else: # loss didn't improve
+                current_patience -= 1
+
             val_loss.append(best_val_loss)
             val_prep.append(eval_ppl)
+
+            if current_patience == 0 and train_config.early_stopping:
+                message = f"Reached best loss at {best_val_loss}. Stopping training for early stopping at epoch {epoch}"
+                if train_config.enable_fsdp and rank == 0:
+                    print(message)
+                else:
+                    print(message)
+                break
+
         if train_config.enable_fsdp:
             if rank==0:
                 print(f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epcoh time {epoch_end_time}s")
         else:
             print(f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epcoh time {epoch_end_time}s")
+
     avg_epoch_time = sum(epoch_times)/ len(epoch_times)
     avg_checkpoint_time = sum(checkpoint_times)/ len(checkpoint_times) if len(checkpoint_times) > 0 else 0
     avg_train_prep = sum(train_prep)/len(train_prep)

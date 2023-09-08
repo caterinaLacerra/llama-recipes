@@ -138,8 +138,10 @@ def main(**kwargs):
             freeze_transformer_layers(train_config.num_freeze_layers)
 
         mixed_precision_policy, wrapping_policy = get_policies(fsdp_config, rank)
-        my_auto_wrapping_policy = fsdp_auto_wrap_policy(model, GPTNeoXLayer)
-        # my_auto_wrapping_policy = fsdp_auto_wrap_policy(model, LlamaDecoderLayer)
+        if 'llama' in train_config.model_name.lower():
+            my_auto_wrapping_policy = fsdp_auto_wrap_policy(model, LlamaDecoderLayer)
+        else:
+            my_auto_wrapping_policy = fsdp_auto_wrap_policy(model, GPTNeoXLayer)
 
         model = FSDP(
             model,
