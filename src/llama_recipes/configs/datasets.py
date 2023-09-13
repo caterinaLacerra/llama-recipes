@@ -30,7 +30,7 @@ class alpaca_dataset:
 @dataclass
 class sharegpt_dataset:
     dataset: str = "sharegpt_dataset"
-    data_path: str = "/home/caterina/sharegpt-data"
+    data_path: str = ""
     train_split: str = "train"
     test_split: str = "validation"
     input_length: int = 4096

@@ -86,18 +86,9 @@ def load_model_sharded(model, rank, cfg):
 def save_model_and_optimizer_sharded(model, rank, cfg,optim=None):
     """save model and optimizer via sharded_state_dict to save_dir"""
     
-    folder_name = (
-        cfg.dist_checkpoint_root_folder
-        + "/"
-        + cfg.dist_checkpoint_folder
-        + "-"
-        + cfg.model_name
-    )
-
-    save_dir = Path.cwd() / folder_name
+    save_dir = Path(cfg.dist_checkpoint_root_folder).joinpath(cfg.dist_checkpoint_folder).joinpath(cfg.model_name)
     if rank == 0:
         print(f"Saving model to {save_dir}")
-
     distributed_writer = dist_cp.FileSystemWriter(
         save_dir,
     )
@@ -122,12 +113,13 @@ def save_model_and_optimizer_sharded(model, rank, cfg,optim=None):
         print(
             f"Checkpoint Time = {t1-t0:.4f}\n"
         )
+
 def save_model_checkpoint(
     model,
-    optimizer,
     rank,
     cfg,
     epoch=1,
+    step=0
 ):
     """saving model via rank0 cpu streaming and full_state_dict"""
 
@@ -142,23 +134,13 @@ def save_model_checkpoint(
     if rank == 0:
         print(f"--> saving model ...")
         # create save path
-        folder_name = (
-        cfg.dist_checkpoint_root_folder
-        + "/"
-        + cfg.dist_checkpoint_folder
-        + "-"
-        + cfg.model_name
-        )
-        save_dir = Path.cwd() / folder_name
-        save_dir.mkdir(parents=True, exist_ok=True)
-        save_name = cfg.model_name + "-" + str(epoch) + ".pt"
-        save_full_path = str(save_dir) + "/" + save_name
-
+        folder_name = Path(cfg.dist_checkpoint_root_folder).joinpath(Path(cfg.dist_checkpoint_folder)).resolve()
+        folder_name.mkdir(parents=True, exist_ok=True)
+        save_name = f"{cfg.model_name}-epoch:{epoch}-step:{step}.pt"
+        save_full_path = folder_name.joinpath(save_name)
         # save model
         torch.save(cpu_state, save_full_path)
-
-        
-        print(f"model checkpoint saved for epoch {epoch} at {save_full_path}\n")
+        print(f"model checkpoint saved for epoch {epoch} step {step} at {save_full_path}\n")
       
 
 

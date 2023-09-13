@@ -12,7 +12,8 @@ class train_config:
     run_validation: bool=True
     batch_size_training: int=4
     gradient_accumulation_steps: int=1
-    num_epochs: int=10
+    validate_evey_n_steps: int=100 # perform validation and save checkpoints every N steps (if -1, waits for the end of the epoch)
+    num_epochs: int=100
     num_workers_dataloader: int=1
     lr: float=1e-4
     weight_decay: float=0.0
@@ -30,12 +31,12 @@ class train_config:
     quantization: bool = False
     one_gpu: bool = False
     save_model: bool = True
-    dist_checkpoint_root_folder: str="/data/caterina/debug/new-repo" # will be used if using FSDP
-    dist_checkpoint_folder: str="fine-tuned" # will be used if using FSDP
+    dist_checkpoint_root_folder: str="/data/caterina/ft-checkpoints/" # will be used if using FSDP
+    dist_checkpoint_folder: str="" # will be used if using FSDP
     save_optimizer: bool=False # will be used if using FSDP
     use_fast_kernels: bool = False # Enable using SDPA from PyTroch Accelerated Transformers, make use Flash Attention and Xformer memory-efficient kernels
     early_stopping: bool = True
-    patience: int = 3 # patience for early stopping callback
+    patience: int = 5 # patience for early stopping callback
     
     
     

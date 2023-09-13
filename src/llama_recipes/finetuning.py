@@ -2,6 +2,8 @@
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
 
 import os
+from pathlib import Path
+
 from pkg_resources import packaging
 
 import fire
@@ -47,6 +49,9 @@ from llama_recipes.utils.train_utils import (
 def main(**kwargs):
     # Update the configuration for the training and sharding process
     update_config((train_config, fsdp_config), **kwargs)
+
+    if train_config.save_model and Path(train_config.dist_checkpoint_root_folder).joinpath(train_config.dist_checkpoint_folder).exists():
+        raise ValueError("Please define a new folder to save checkpoints")
 
     # Set the seeds for reproducibility
     torch.cuda.manual_seed(train_config.seed)
