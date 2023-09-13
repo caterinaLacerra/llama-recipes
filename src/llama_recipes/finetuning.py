@@ -36,7 +36,6 @@ from llama_recipes.utils.config_utils import (
 from llama_recipes.utils.dataset_utils import get_preprocessed_dataset
 
 from llama_recipes.utils.train_utils import (
-    train,
     freeze_transformer_layers,
     setup,
     setup_environ_flags,
@@ -44,6 +43,7 @@ from llama_recipes.utils.train_utils import (
     print_model_size,
     get_policies
 )
+from llama_recipes.utils.training_loop import train
 
 
 def main(**kwargs):
@@ -207,7 +207,7 @@ def main(**kwargs):
         num_workers=train_config.num_workers_dataloader,
         pin_memory=True,
         sampler=train_sampler if train_sampler else None,
-        drop_last=True,
+        drop_last=False,
         collate_fn=dataset_train.collate_fn,
     )
 
@@ -219,7 +219,7 @@ def main(**kwargs):
             num_workers=train_config.num_workers_dataloader,
             pin_memory=True,
             sampler=val_sampler if val_sampler else None,
-            drop_last=True,
+            drop_last=False,
             collate_fn=dataset_val.collate_fn,
         )
 

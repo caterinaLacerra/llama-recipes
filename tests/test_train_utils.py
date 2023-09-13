@@ -1,6 +1,7 @@
 import torch
 
-from llama_recipes.utils.train_utils import train
+from llama_recipes.utils.training_loop import train
+
 
 def test_gradient_accumulation(mocker):
     # import sys
