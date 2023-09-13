@@ -49,9 +49,9 @@ from llama_recipes.utils.training_loop import train
 def main(**kwargs):
     # Update the configuration for the training and sharding process
     update_config((train_config, fsdp_config), **kwargs)
-
-    if train_config.save_model and Path(train_config.dist_checkpoint_root_folder).joinpath(train_config.dist_checkpoint_folder).exists():
-        raise ValueError("Please define a new folder to save checkpoints")
+    save_path = Path(train_config.dist_checkpoint_root_folder).joinpath(train_config.dist_checkpoint_folder)
+    if train_config.save_model and save_path.exists() and save_path.is_dir() and list(save_path.iterdir()) != []:
+        raise ValueError(f"Please define a new folder to save checkpoints: {save_path} exists and is not empty.")
 
     # Set the seeds for reproducibility
     torch.cuda.manual_seed(train_config.seed)

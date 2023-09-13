@@ -45,16 +45,7 @@ fullstate_save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True
 
 
 def load_model_sharded(model, rank, cfg):
-    # torch.manual_seed(103)
-    folder_name = (
-        cfg.dist_checkpoint_root_folder
-        + "/"
-        + cfg.dist_checkpoint_folder
-        + "-"
-        + cfg.model_name
-    )
-
-    load_dir = Path.cwd() / folder_name
+    load_dir = Path(cfg.dist_checkpoint_root_folder).joinpath(cfg.dist_checkpoint_folder).resolve()
 
     if not load_dir.exists():
         if rank == 0:
@@ -86,7 +77,7 @@ def load_model_sharded(model, rank, cfg):
 def save_model_and_optimizer_sharded(model, rank, cfg,optim=None):
     """save model and optimizer via sharded_state_dict to save_dir"""
     
-    save_dir = Path(cfg.dist_checkpoint_root_folder).joinpath(cfg.dist_checkpoint_folder).joinpath(cfg.model_name)
+    save_dir = Path(cfg.dist_checkpoint_root_folder).joinpath(cfg.dist_checkpoint_folder).resolve()
     if rank == 0:
         print(f"Saving model to {save_dir}")
     distributed_writer = dist_cp.FileSystemWriter(
@@ -134,7 +125,7 @@ def save_model_checkpoint(
     if rank == 0:
         print(f"--> saving model ...")
         # create save path
-        folder_name = Path(cfg.dist_checkpoint_root_folder).joinpath(Path(cfg.dist_checkpoint_folder)).resolve()
+        folder_name = Path(cfg.dist_checkpoint_root_folder).joinpath(cfg.dist_checkpoint_folder).resolve()
         folder_name.mkdir(parents=True, exist_ok=True)
         save_name = f"{cfg.model_name}-epoch:{epoch}-step:{step}.pt"
         save_full_path = folder_name.joinpath(save_name)

@@ -54,7 +54,6 @@ def run_validation(
             elif not train_config.use_peft and fsdp_config.checkpoint_type == StateDictType.SHARDED_STATE_DICT:
                 print(" Saving the FSDP model checkpoints using SHARDED_STATE_DICT")
                 print("=====================================================")
-
                 save_model_and_optimizer_sharded(model, rank, train_config)
                 if train_config.save_optimizer:
                     save_model_and_optimizer_sharded(model, rank, train_config, optim=optimizer)
@@ -73,10 +72,12 @@ def run_validation(
 
     checkpoint_end_time = time.perf_counter() - checkpoint_start_time
     checkpoint_times.append(checkpoint_end_time)
+    previous_loss = best_val_loss
     if eval_epoch_loss < best_val_loss:
         best_val_loss = eval_epoch_loss
         distributed_print(
-            message=f"best eval loss on epoch {epoch}, step {step} is {best_val_loss}",
+            message=f"Updating loss. Best eval loss on epoch {epoch}, step {step} is {best_val_loss}, "
+                    f"previous loss: {previous_loss}",
             rank=rank,
             fsdp=train_config.enable_fsdp
         )
@@ -87,13 +88,18 @@ def run_validation(
 
     val_loss.append(best_val_loss)
     val_prep.append(eval_ppl)
+    distributed_print(
+        f"Current validation loss: {best_val_loss}. Current patience: {current_patience}",
+        rank=rank,
+        fsdp=train_config.enable_fsdp
+    )
     should_stop = False
     if current_patience == 0 and train_config.early_stopping:
         message = f"Reached best loss at {best_val_loss}. Stopping training for early stopping at epoch {epoch}"
         distributed_print(message, rank, train_config.enable_fsdp)
         should_stop = True
 
-    return current_patience, checkpoint_times, val_loss, val_prep, should_stop
+    return current_patience, checkpoint_times, val_loss, val_prep, best_val_loss, should_stop
 
 
 def set_tokenizer_params(tokenizer: LlamaTokenizer):

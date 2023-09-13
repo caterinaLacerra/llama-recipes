@@ -12,7 +12,7 @@ class train_config:
     run_validation: bool=True
     batch_size_training: int=4
     gradient_accumulation_steps: int=1
-    validate_every_n_steps: int=50 # perform validation and save checkpoints every N steps (if -1, waits for the end of the epoch)
+    validate_every_n_steps: int=200 # perform validation and save checkpoints every N steps (if -1, waits for the end of the epoch)
     num_epochs: int=100
     num_workers_dataloader: int=1
     lr: float=1e-4

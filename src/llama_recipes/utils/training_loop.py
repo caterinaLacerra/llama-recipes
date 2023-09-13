@@ -85,7 +85,7 @@ def train(
                 )
                 if train_config.run_validation and train_config.validate_every_n_steps != -1:
                     if step != 0 and step % train_config.validate_every_n_steps == 0:
-                        current_patience, checkpoint_times, val_loss, val_prep, should_stop = run_validation(
+                        current_patience, checkpoint_times, val_loss, val_prep, best_val_loss, should_stop = run_validation(
                             model,
                             tokenizer,
                             optimizer,
@@ -132,7 +132,7 @@ def train(
         lr_scheduler.step()
 
         if train_config.run_validation and train_config.validate_every_n_steps == -1:
-            current_patience, checkpoint_times, val_loss, val_prep, should_stop = run_validation(
+            current_patience, checkpoint_times, val_loss, val_prep, best_val_loss, should_stop = run_validation(
                 model,
                 tokenizer,
                 optimizer,
