@@ -7,7 +7,7 @@ from torch.distributed.fsdp import ShardingStrategy
 from torch.distributed.fsdp.fully_sharded_data_parallel import StateDictType
 
 @dataclass
-class fsdp_config:
+class FSDPConfig:
     mixed_precision: bool=True
     use_fp16: bool=False
     sharding_strategy: ShardingStrategy = ShardingStrategy.FULL_SHARD

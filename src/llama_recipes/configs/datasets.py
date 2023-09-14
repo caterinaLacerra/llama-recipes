@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
     
 @dataclass
-class samsum_dataset:
+class SamsumDataset:
     dataset: str =  "samsum_dataset"
     train_split: str = "train"
     test_split: str = "validation"
@@ -13,7 +13,7 @@ class samsum_dataset:
     
     
 @dataclass
-class grammar_dataset:
+class GrammarDataset:
     dataset: str = "grammar_dataset"
     train_split: str = "src/llama_recipes/datasets/grammar_dataset/gtrain_10k.csv" 
     test_split: str = "src/llama_recipes/datasets/grammar_dataset/grammar_validation.csv"
@@ -21,14 +21,14 @@ class grammar_dataset:
 
     
 @dataclass
-class alpaca_dataset:
+class AlpacaDataset:
     dataset: str = "alpaca_dataset"
     train_split: str = "train"
     test_split: str = "val"
     data_path: str = "src/llama_recipes/datasets/alpaca_data.json"
 
 @dataclass
-class sharegpt_dataset:
+class SharegptDataset:
     dataset: str = "sharegpt_dataset"
     data_path: str = ""
     train_split: str = "train"

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class train_config:
+class TrainConfig:
     model_name: str="/data/models/pythia-70m-deduped"
     enable_fsdp: bool=True
     low_cpu_fsdp: bool=False

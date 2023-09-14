@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import ClassVar, List
 
 @dataclass
-class lora_config:
+class LoraConfig:
      r: int=8
      lora_alpha: int=32
      target_modules: ClassVar[List[str]]= ["q_proj", "v_proj"]
@@ -15,12 +15,12 @@ class lora_config:
      inference_mode: bool = False
 
 @dataclass
-class llama_adapter_config:
+class LlamaAdapterConfig:
      adapter_len: int= 10
      adapter_layers: int= 30
      task_type: str= "CAUSAL_LM"
 
 @dataclass
-class prefix_config:
+class PrefixConfig:
      num_virtual_tokens: int=30
      task_type: str= "CAUSAL_LM"    
