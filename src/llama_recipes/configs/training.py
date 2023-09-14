@@ -10,7 +10,7 @@ class TrainConfig:
     enable_fsdp: bool=True
     low_cpu_fsdp: bool=False
     run_validation: bool=True
-    batch_size_training: int=4
+    batch_size_training: int=3
     gradient_accumulation_steps: int=1
     validate_every_n_steps: int=200 # perform validation and save checkpoints every N steps (if -1, waits for the end of the epoch)
     num_epochs: int=100
@@ -22,7 +22,7 @@ class TrainConfig:
     use_fp16: bool=True
     mixed_precision: bool=False # not supported
     val_batch_size: int=1
-    dataset = "sharegpt_dataset"
+    dataset = "SharegptDataset"
     peft_method: str = "None" # None , llama_adapter, prefix
     use_peft: bool=False
     output_dir: str = "PATH/to/save/PEFT/model"

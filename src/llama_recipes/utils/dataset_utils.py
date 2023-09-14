@@ -14,10 +14,10 @@ from llama_recipes.llama_datasets import (
 
 
 DATASET_PREPROC = {
-    "alpaca_dataset": partial(get_alpaca_dataset, max_words=224),
-    "grammar_dataset": get_grammar_dataset,
-    "samsum_dataset": get_samsum_dataset,
-    "sharegpt_dataset": get_sharegpt_dataset
+    "AlpacaDataset": partial(get_alpaca_dataset, max_words=224),
+    "GrammarDataset": get_grammar_dataset,
+    "SamsumDataset": get_samsum_dataset,
+    "SharegptDataset": get_sharegpt_dataset
 }
 
 
