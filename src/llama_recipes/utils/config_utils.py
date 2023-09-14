@@ -10,7 +10,7 @@ from peft import (
     PrefixTuningConfig,
 )
 
-from llama_recipes.configs import datasets, lora_config, llama_adapter_config, prefix_config, train_config
+from llama_recipes.configs import datasets, LoraConfig, LlamaAdapterConfig, PrefixConfig, TrainConfig
 from llama_recipes.utils.dataset_utils import DATASET_PREPROC
 
 
@@ -31,12 +31,12 @@ def update_config(config, **kwargs):
                     else:
                         # In case of specialized config we can warm user
                         print(f"Warning: {config_name} does not accept parameter: {k}")
-            elif isinstance(config, train_config):
+            elif isinstance(config, TrainConfig):
                 print(f"Warning: unknown parameter {k}")
                         
                         
 def generate_peft_config(train_config, kwargs):
-    configs = (lora_config, llama_adapter_config, prefix_config)
+    configs = (LoraConfig, LlamaAdapterConfig, PrefixConfig)
     peft_configs = (LoraConfig, AdaptionPromptConfig, PrefixTuningConfig)
     names = tuple(c.__name__.rstrip("_config") for c in configs)
     

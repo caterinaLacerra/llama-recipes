@@ -7,7 +7,7 @@ from torch.distributed.fsdp.sharded_grad_scaler import ShardedGradScaler
 from tqdm import tqdm
 
 from llama_recipes.utils import MemoryTrace, gradient_update, run_validation, distributed_print, update_results, \
-    save_train_params
+    prepare_to_end_training
 
 
 def train(
@@ -53,6 +53,7 @@ def train(
     results = {}
     current_patience = train_config.patience
     best_val_loss = float("inf")
+
     for epoch in range(train_config.num_epochs):
         epoch_start_time = time.perf_counter()
         with MemoryTrace() as memtrace:  # track the memory usage
@@ -102,7 +103,7 @@ def train(
                             checkpoint_times,
                             current_patience
                         )
-                        if should_stop:
+                        if should_stop is True:
                             break
 
         epoch_end_time = time.perf_counter() - epoch_start_time
@@ -128,6 +129,21 @@ def train(
             fsdp=train_config.enable_fsdp
         )
 
+        # end for early stopping mid-epoch
+        if should_stop:
+            results = prepare_to_end_training(
+                results,
+                epoch_times,
+                checkpoint_times,
+                train_prep,
+                train_loss,
+                val_prep,
+                val_loss,
+                train_config,
+                fsdp_config,
+                rank)
+            return results
+
         # Update the learning rate as needed
         lr_scheduler.step()
 
@@ -150,17 +166,42 @@ def train(
                 current_patience
             )
 
+            # end for early stopping at the end of an epoch
             if should_stop:
-                break
+                prepare_to_end_training(
+                    results,
+                    epoch_times,
+                    checkpoint_times,
+                    train_prep,
+                    train_loss,
+                    val_prep,
+                    val_loss,
+                    train_config,
+                    fsdp_config,
+                    rank)
+                return results
 
-        distributed_print(message=f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epoch time {epoch_end_time}s", rank=rank, fsdp=train_config.enable_fsdp)
+            return results
 
-    results = update_results(
-        results, epoch_times, checkpoint_times, train_prep, train_loss, val_prep, val_loss, train_config
-    )
+        distributed_print(
+            message=f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, "
+                    f"train_epoch_loss={train_epoch_loss:.4f}, epoch time {epoch_end_time}s",
+            rank=rank,
+            fsdp=train_config.enable_fsdp
+        )
 
-    #saving the training params including fsdp setting for reference.
-    if train_config.enable_fsdp and not train_config.use_peft:
-        save_train_params(train_config, fsdp_config, rank)
+    # end without early stopping
+    prepare_to_end_training(
+        results,
+        epoch_times,
+        checkpoint_times,
+        train_prep,
+        train_loss,
+        val_prep,
+        val_loss,
+        train_config,
+        fsdp_config,
+        rank)
 
     return results
+

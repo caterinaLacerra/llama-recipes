@@ -1,8 +1,11 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
-
+import dataclasses
 import os
 import time
+from typing import Any, Dict, List
+
+import transformers
 import yaml
 from pathlib import Path
 from pkg_resources import packaging
@@ -14,26 +17,28 @@ from torch.distributed.fsdp import StateDictType
 from tqdm import tqdm
 from transformers import LlamaTokenizer
 
-from llama_recipes.model_checkpointing import save_model_checkpoint, save_model_and_optimizer_sharded, save_optimizer_checkpoint
+from llama_recipes.configs import TrainConfig, FSDPConfig
+from llama_recipes.model_checkpointing import save_model_checkpoint, save_model_and_optimizer_sharded, \
+    save_optimizer_checkpoint
 from llama_recipes.policies import fpSixteen, bfSixteen_mixed, get_llama_wrapper
 
 
 def run_validation(
-        model,
-        tokenizer,
-        optimizer,
-        train_config,
-        fsdp_config,
-        eval_dataloader,
-        local_rank,
-        rank,
-        epoch,
-        step,
-        best_val_loss,
-        val_loss,
-        val_prep,
-        checkpoint_times,
-        current_patience
+        model: transformers.AutoModel.from_pretrained,
+        tokenizer: transformers.AutoTokenizer.from_pretrained,
+        optimizer: torch.optim.Optimizer,
+        train_config: TrainConfig,
+        fsdp_config: FSDPConfig,
+        eval_dataloader: torch.utils.data.DataLoader,
+        local_rank: int,
+        rank: int,
+        epoch: int,
+        step: int,
+        best_val_loss: torch.Tensor,
+        val_loss: torch.Tensor,
+        val_prep: torch.Tensor,
+        checkpoint_times: List[float],
+        current_patience: int
 ):
     eval_ppl, eval_epoch_loss = evaluation(model, train_config, eval_dataloader, local_rank, tokenizer)
     checkpoint_start_time = time.perf_counter()
@@ -308,7 +313,7 @@ def save_train_params(train_config, fsdp_config, rank):
     """
     This function saves the train_config and FSDP config into a train_params.yaml.
     This will be used by converter script in the inference folder to fetch the HF model name or path.
-    It also would be hepful as a log for future references.
+    It also would be helpful as a log for future references.
     """
     # Convert the train_config and fsdp_config objects to dictionaries, 
     # converting all values to strings to ensure they can be serialized into a YAML file
@@ -316,16 +321,9 @@ def save_train_params(train_config, fsdp_config, rank):
     fsdp_config_dict = {k: str(v) for k, v in vars(fsdp_config).items() if not k.startswith('__')}
     # Merge the two dictionaries into one
     train_params_dict = {**train_config_dict, **fsdp_config_dict}
-    # Construct the folder name (follwoing FSDP checkpointing style) using properties of the train_config object
-    folder_name = (
-            train_config.dist_checkpoint_root_folder
-            + "/"
-            + train_config.dist_checkpoint_folder
-            + "-"
-            + train_config.model_name
-    )
+    # Construct the folder name (following FSDP checkpointing style) using properties of the train_config object
 
-    save_dir = Path.cwd() / folder_name
+    save_dir = Path(train_config.dist_checkpoint_root_folder).joinpath(train_config.dist_checkpoint_folder).resolve()
     # If the directory does not exist, create it
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -342,3 +340,26 @@ def save_train_params(train_config, fsdp_config, rank):
             f.write(config_yaml)
         if rank == 0:
             print(f"training params are saved in {file_name}")
+
+
+def prepare_to_end_training(
+        current_results: Dict[str, Any],
+        epoch_times: List[float],
+        checkpoint_times: List[float],
+        train_prep: List[torch.Tensor],
+        train_loss: List[float],
+        val_prep: List[torch.Tensor],
+        val_loss: List[torch.Tensor],
+        train_config: TrainConfig,
+        fsdp_config: FSDPConfig,
+        rank: int
+):
+    results = update_results(
+        current_results, epoch_times, checkpoint_times, train_prep, train_loss, val_prep, val_loss, train_config
+    )
+
+    # saving the training params including fsdp setting for reference.
+    if train_config.enable_fsdp and not train_config.use_peft:
+        save_train_params(train_config, fsdp_config, rank)
+
+    return results
