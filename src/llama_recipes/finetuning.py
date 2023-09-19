@@ -20,6 +20,7 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     AutoConfig,
+    default_data_collator
 )
 from transformers.models.llama.modeling_llama import LlamaDecoderLayer
 from transformers.models.gpt_neox.modeling_gpt_neox import GPTNeoXLayer
@@ -45,6 +46,8 @@ from llama_recipes.utils.train_utils import (
 )
 from llama_recipes.utils.training_loop import train
 
+def is_lama_model(train_config: TrainConfig) -> bool:
+    return 'llama' in train_config.model_name.lower()
 
 def main(**kwargs):
     # Update the configuration for the training and sharding process
@@ -143,7 +146,8 @@ def main(**kwargs):
             freeze_transformer_layers(TrainConfig.num_freeze_layers)
 
         mixed_precision_policy, wrapping_policy = get_policies(FSDPConfig, rank)
-        if 'llama' in TrainConfig.model_name.lower():
+
+        if is_lama_model(TrainConfig):
             my_auto_wrapping_policy = fsdp_auto_wrap_policy(model, LlamaDecoderLayer)
         else:
             my_auto_wrapping_policy = fsdp_auto_wrap_policy(model, GPTNeoXLayer)
@@ -200,6 +204,10 @@ def main(**kwargs):
                 num_replicas=dist.get_world_size(),
             )
 
+    if is_lama_model(TrainConfig):
+        collator = default_data_collator
+    else:
+        collator = dataset_train.collate_fn
     # Create DataLoaders for the training and validation dataset
     train_dataloader = torch.utils.data.DataLoader(
         dataset_train,
