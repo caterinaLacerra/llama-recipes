@@ -24,7 +24,9 @@ def get_preprocessed_samsum(dataset_config, tokenizer, split):
         }
 
     dataset = dataset.map(apply_prompt_template, remove_columns=list(dataset.features))
-        
+    if split == 'train':
+        dataset = dataset.select(range(4000))
+
     dataset = dataset.map(
         lambda sample: tokenizer(sample["text"]),
         batched=True,
