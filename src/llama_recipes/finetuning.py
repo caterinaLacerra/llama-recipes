@@ -15,7 +15,7 @@ from torch.distributed.fsdp import (
     FullyShardedDataParallel as FSDP,
 )
 from torch.optim.lr_scheduler import StepLR
-from torch.utils.data import DistributedSampler
+from torch.utils.data import DistributedSampler, Dataset
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -48,6 +48,12 @@ from llama_recipes.utils.training_loop import train
 
 def is_lama_model(train_config: TrainConfig) -> bool:
     return 'llama' in train_config.model_name.lower()
+
+
+def has_collate_fn(dataset_instance: Dataset) -> bool:
+    collate = getattr(dataset_instance, "collate_fn", None)
+    return callable(collate)
+
 
 def main(**kwargs):
     # Update the configuration for the training and sharding process
@@ -204,7 +210,7 @@ def main(**kwargs):
                 num_replicas=dist.get_world_size(),
             )
 
-    if is_lama_model(TrainConfig):
+    if has_collate_fn(dataset_train):
         collator = default_data_collator
     else:
         collator = dataset_train.collate_fn
