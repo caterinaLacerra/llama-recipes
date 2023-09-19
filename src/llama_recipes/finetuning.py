@@ -52,7 +52,6 @@ def is_lama_model(train_config: TrainConfig) -> bool:
 
 def has_collate_fn(dataset_instance: Dataset) -> bool:
     collate = getattr(dataset_instance, "collate_fn", None)
-    print(collate)
     return callable(collate)
 
 
@@ -211,12 +210,11 @@ def main(**kwargs):
                 num_replicas=dist.get_world_size(),
             )
 
-    print(has_collate_fn(dataset_train))
-    exit()
     if has_collate_fn(dataset_train):
-        collator = default_data_collator
-    else:
         collator = dataset_train.collate_fn
+    else:
+        collator = default_data_collator
+
     # Create DataLoaders for the training and validation dataset
     train_dataloader = torch.utils.data.DataLoader(
         dataset_train,
