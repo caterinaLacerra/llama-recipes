@@ -222,7 +222,7 @@ def main(**kwargs):
         pin_memory=True,
         sampler=train_sampler if train_sampler else None,
         drop_last=False,
-        collate_fn=dataset_train.collate_fn,
+        collate_fn=collator,
     )
 
     eval_dataloader = None
@@ -234,7 +234,7 @@ def main(**kwargs):
             pin_memory=True,
             sampler=val_sampler if val_sampler else None,
             drop_last=False,
-            collate_fn=dataset_val.collate_fn,
+            collate_fn=collator,
         )
 
     # Initialize the optimizer and learning rate scheduler
