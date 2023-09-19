@@ -1,6 +1,7 @@
 .DS_Store
 __pycache__
-.ipynb_checkpoints
-*/__pycache__
-*/*/__pycache__
+.ipynb_checkpoints:
+src/__pycache__
+src/llama_recipes/__pycache__
+src/llama_recipes/*/__pycache__
 src/llama_recipes/configs
